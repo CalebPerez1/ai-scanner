@@ -1,0 +1,35 @@
+# Claude Code - keep invisible
+CLAUDE.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite3
+
+# Node (frontend)
+node_modules/
+frontend/build/
+
+# Reports output
+reports/*.pdf
+reports/*.json
