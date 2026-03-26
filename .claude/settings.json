@@ -3,7 +3,8 @@
     "allow": [
       "Bash(./venv/bin/pytest tests/test_model_scanner.py -v)",
       "Bash(PYTHONPATH=. ./venv/bin/pytest tests/test_model_scanner.py -v)",
-      "Bash(PYTHONPATH=. ./venv/bin/pytest tests/test_config_analyzer.py -v)"
+      "Bash(PYTHONPATH=. ./venv/bin/pytest tests/test_config_analyzer.py -v)",
+      "Bash(PYTHONPATH=. ./venv/bin/pytest tests/test_prompt_tester.py -v)"
     ]
   }
 }
