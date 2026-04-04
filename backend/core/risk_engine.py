@@ -7,6 +7,7 @@ summary, and returns a ScanResult.
 Supported input formats:
 - Local directory path (str or Path)
 - GitHub repository URL (https://github.com/... or git@github.com:...)
+- GitLab repository URL (https://gitlab.com/... or git@gitlab.com:...)
 """
 from __future__ import annotations
 
@@ -24,8 +25,8 @@ from backend.scanners.model_scanner import scan_models
 from backend.scanners.prompt_tester import scan_prompt_injection
 
 
-def _is_github_url(path_or_url: str) -> bool:
-    """Return True if the input looks like a GitHub or git remote URL.
+def _is_git_url(path_or_url: str) -> bool:
+    """Return True if the input looks like a GitHub or GitLab remote URL.
 
     Args:
         path_or_url: A string that may be a local path or a remote URL.
@@ -38,12 +39,15 @@ def _is_github_url(path_or_url: str) -> bool:
         "https://github.com/",
         "http://github.com/",
         "git@github.com:",
+        "https://gitlab.com/",
+        "http://gitlab.com/",
+        "git@gitlab.com:",
         "git+https://",
     ))
 
 
 def _clone_repo(url: str) -> Path:
-    """Clone a GitHub repository to a fresh temporary directory.
+    """Clone a GitHub or GitLab repository to a fresh temporary directory.
 
     Uses ``git clone --depth=1`` so only the latest commit is fetched,
     keeping the clone fast regardless of repository history.
@@ -178,7 +182,7 @@ async def scan_project(
     path_str = str(project_path)
     tmp_dir: Optional[Path] = None
 
-    if _is_github_url(path_str):
+    if _is_git_url(path_str):
         tmp_dir = _clone_repo(path_str)
         resolved_path: Path = tmp_dir
     else:
@@ -196,6 +200,7 @@ async def scan_project(
 
 
 __all__ = [
+    "_is_git_url",
     "run_all_scanners",
     "generate_scan_result",
     "scan_project",

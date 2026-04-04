@@ -7,7 +7,7 @@ Tests cover:
 - generate_scan_result: creates a ScanResult with correct summary fields.
 - scan_project: resolves local paths and GitHub URLs; derives project names;
   cleans up temporary clone directories after scanning.
-- _is_github_url / _derive_project_name: URL detection and name derivation helpers.
+- _is_git_url / _derive_project_name: URL detection and name derivation helpers.
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ import pytest
 from backend.core.models import Finding, ScanResult, Severity
 from backend.core.risk_engine import (
     _derive_project_name,
-    _is_github_url,
+    _is_git_url,
     generate_scan_result,
     run_all_scanners,
     scan_project,
@@ -64,21 +64,27 @@ def prompt_findings() -> List[Finding]:
 
 
 # ---------------------------------------------------------------------------
-# _is_github_url
+# _is_git_url
 # ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("url,expected", [
+    # GitHub
     ("https://github.com/user/repo", True),
     ("http://github.com/user/repo", True),
     ("git@github.com:user/repo.git", True),
     ("git+https://github.com/user/repo.git", True),
+    # GitLab
+    ("https://gitlab.com/user/repo", True),
+    ("http://gitlab.com/user/repo", True),
+    ("git@gitlab.com:user/repo.git", True),
+    # Local paths and other hosts
     ("/home/user/project", False),
     ("./relative/path", False),
-    ("https://gitlab.com/user/repo", False),
+    ("https://bitbucket.org/user/repo", False),
     ("", False),
 ])
-def test_is_github_url(url: str, expected: bool) -> None:
-    assert _is_github_url(url) is expected
+def test_is_git_url(url: str, expected: bool) -> None:
+    assert _is_git_url(url) is expected
 
 
 # ---------------------------------------------------------------------------

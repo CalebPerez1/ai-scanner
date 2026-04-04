@@ -1,12 +1,13 @@
 """Command-line interface for AIScan.
 
-Run a security scan against a local project directory or a GitHub repository
-and display findings in your choice of format.
+Run a security scan against a local project directory or a GitHub/GitLab
+repository and display findings in your choice of format.
 
 Usage examples::
 
     python -m backend.cli ./my-project
     python -m backend.cli https://github.com/org/repo --llm-endpoint http://localhost:8080/v1/chat/completions
+    python -m backend.cli https://gitlab.com/org/repo
     python -m backend.cli ./my-project --output json --output-file report.json
     python -m backend.cli ./my-project --output markdown --name "My App"
 """
@@ -344,7 +345,7 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="aiscan",
         description=(
             "AIScan — AI supply chain security scanner.\n\n"
-            "Scans a project directory or GitHub repository for dependency "
+            "Scans a project directory or GitHub/GitLab repository for dependency "
             "vulnerabilities, unsafe model loading, hardcoded secrets, "
             "misconfigurations, and (optionally) prompt injection vulnerabilities."
         ),
@@ -353,6 +354,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "Examples:\n"
             "  python -m backend.cli ./my-project\n"
             "  python -m backend.cli https://github.com/org/repo\n"
+            "  python -m backend.cli https://gitlab.com/org/repo\n"
             "  python -m backend.cli ./app --llm-endpoint http://localhost:8080/v1/chat/completions\n"
             "  python -m backend.cli ./app --output json --output-file report.json\n"
             "  python -m backend.cli ./app --output markdown --name 'My App'"
@@ -362,7 +364,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "project",
         metavar="PROJECT",
-        help="Local directory path or GitHub repository URL to scan.",
+        help="Local directory path, GitHub repository URL, or GitLab repository URL to scan.",
     )
     parser.add_argument(
         "--llm-endpoint",
