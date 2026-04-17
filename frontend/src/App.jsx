@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -34,11 +34,11 @@ function DonutChart({ findings }) {
           <circle
             cx={cx} cy={cy} r={radius}
             fill="none"
-            stroke="#f2f2f7"
+            stroke="#1a2236"
             strokeWidth={strokeWidth}
           />
           <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
-            fontSize="13" fill="#aeaeb2" fontFamily="-apple-system, sans-serif">
+            fontSize="13" fill="#4a5568" fontFamily="-apple-system, sans-serif">
             No data
           </text>
         </svg>
@@ -62,7 +62,7 @@ function DonutChart({ findings }) {
       <svg width={size} height={size} className="donut-svg">
         {/* background track */}
         <circle cx={cx} cy={cy} r={radius} fill="none"
-          stroke="#f2f2f7" strokeWidth={strokeWidth} />
+          stroke="#1a2236" strokeWidth={strokeWidth} />
         {segments.map(({ sev, dash, gap, rotation }) => (
           <circle
             key={sev}
@@ -78,12 +78,12 @@ function DonutChart({ findings }) {
         ))}
         {/* centre label */}
         <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle"
-          fontSize="26" fontWeight="700" fill="#1c1c1e"
+          fontSize="26" fontWeight="700" fill="#e8eaf0"
           fontFamily="-apple-system, sans-serif">
           {total}
         </text>
         <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="middle"
-          fontSize="11" fill="#6e6e73" fontFamily="-apple-system, sans-serif">
+          fontSize="11" fill="#8892a4" fontFamily="-apple-system, sans-serif">
           findings
         </text>
       </svg>
@@ -230,7 +230,12 @@ function FindingsTable({ findings }) {
 
       <div className="findings-toolbar">
         <div className="search-wrap">
-          <span className="search-icon">⌕</span>
+          <span className="search-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <circle cx="5.5" cy="5.5" r="3.5" />
+              <line x1="8.5" y1="8.5" x2="12.5" y2="12.5" />
+            </svg>
+          </span>
           <input
             className="search-input"
             placeholder="Search findings…"
@@ -261,7 +266,12 @@ function FindingsTable({ findings }) {
 
       {filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🔍</div>
+          <div className="empty-icon">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#8892a4" strokeWidth="1.8" strokeLinecap="round">
+              <circle cx="17" cy="17" r="10" />
+              <line x1="24.5" y1="24.5" x2="35" y2="35" />
+            </svg>
+          </div>
           <p>No findings match your filters</p>
           <span>Try adjusting your search or severity filter</span>
         </div>
@@ -286,6 +296,7 @@ function FindingsTable({ findings }) {
                 <React.Fragment key={idx}>
                   <tr
                     className={`finding-row${isOpen ? ' expanded' : ''}`}
+                    data-severity={f.severity}
                     onClick={() => toggle(idx)}
                   >
                     <td><span className={`chevron${isOpen ? ' open' : ''}`}>›</span></td>
@@ -321,6 +332,137 @@ function FindingsTable({ findings }) {
             })}
           </tbody>
         </table>
+      )}
+    </div>
+  );
+}
+
+// ─── Export helpers ───────────────────────────────────────────────────────────
+
+function triggerDownload(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildMarkdown(result) {
+  const date = result.scan_date?.slice(0, 10) ?? 'unknown';
+  const slug = (result.project_name ?? 'report').replace(/\s+/g, '-').toLowerCase();
+
+  const lines = [
+    `# AI-Scan Security Report — ${result.project_name}`,
+    '',
+    `**Scan date:** ${date}  `,
+    `**Total findings:** ${result.total_findings}`,
+    '',
+    '## Severity Summary',
+    '',
+    '| Severity | Count |',
+    '|----------|------:|',
+    ...SEV_ORDER.map(s =>
+      `| ${SEV_META[s].label} | ${result.by_severity?.[s] ?? 0} |`
+    ),
+    '',
+    '## Findings',
+    '',
+    '| # | Severity | Title | Scanner | Location |',
+    '|---|----------|-------|---------|----------|',
+  ];
+
+  const sorted = [...result.findings].sort(
+    (a, b) => SEV_ORDER.indexOf(a.severity) - SEV_ORDER.indexOf(b.severity)
+  );
+
+  sorted.forEach((f, i) => {
+    const loc = f.file_path
+      ? `${f.file_path}${f.line_number ? `:${f.line_number}` : ''}`
+      : '—';
+    const title = f.title.replace(/\|/g, '\\|');
+    lines.push(`| ${i + 1} | ${SEV_META[f.severity]?.label ?? f.severity} | ${title} | ${f.scanner_name} | ${loc} |`);
+  });
+
+  lines.push('', '## Finding Details', '');
+
+  sorted.forEach((f, i) => {
+    const loc = f.file_path
+      ? `${f.file_path}${f.line_number ? `:${f.line_number}` : ''}`
+      : null;
+    lines.push(`### ${i + 1}. ${f.title}`, '');
+    lines.push(`- **Severity:** ${SEV_META[f.severity]?.label ?? f.severity}`);
+    lines.push(`- **Scanner:** ${f.scanner_name}`);
+    if (loc) lines.push(`- **Location:** \`${loc}\``);
+    lines.push('', f.description, '');
+    if (f.recommendation) {
+      lines.push(`> **Recommendation:** ${f.recommendation}`, '');
+    }
+  });
+
+  return { md: lines.join('\n'), slug };
+}
+
+// ─── Export Menu ──────────────────────────────────────────────────────────────
+
+function ExportMenu({ result }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!open) return;
+    const handler = e => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const exportJSON = () => {
+    const slug = (result.project_name ?? 'report').replace(/\s+/g, '-').toLowerCase();
+    triggerDownload(JSON.stringify(result, null, 2), `aiscan-${slug}.json`, 'application/json');
+    setOpen(false);
+  };
+
+  const exportMarkdown = () => {
+    const { md, slug } = buildMarkdown(result);
+    triggerDownload(md, `aiscan-${slug}.md`, 'text/markdown');
+    setOpen(false);
+  };
+
+  const exportPDF = () => {
+    setOpen(false);
+    // Small delay so the dropdown closes before the print dialog opens
+    setTimeout(() => window.print(), 80);
+  };
+
+  return (
+    <div className="export-wrap" ref={wrapRef}>
+      <button className="btn-export" onClick={() => setOpen(o => !o)}>
+        Export
+        <span className={`export-chevron${open ? ' open' : ''}`}>›</span>
+      </button>
+      {open && (
+        <div className="export-dropdown">
+          <button className="export-item" onClick={exportJSON}>
+            <span className="export-icon">{ }</span>
+            <span>JSON</span>
+            <span className="export-hint">.json</span>
+          </button>
+          <button className="export-item" onClick={exportMarkdown}>
+            <span className="export-icon">#</span>
+            <span>Markdown</span>
+            <span className="export-hint">.md</span>
+          </button>
+          <div className="export-divider" />
+          <button className="export-item" onClick={exportPDF}>
+            <span className="export-icon">⎙</span>
+            <span>PDF</span>
+            <span className="export-hint">print</span>
+          </button>
+        </div>
       )}
     </div>
   );
@@ -396,7 +538,6 @@ export default function App() {
       {/* ── Nav ── */}
       <nav className="nav">
         <div className="nav-brand">
-          <div className="nav-logo">🛡️</div>
           <div className="nav-title">AI<span>-Scan</span></div>
         </div>
         <div className="health-badge">
@@ -450,25 +591,43 @@ export default function App() {
                 {scanning ? (
                   <><div className="spinner" />Scanning…</>
                 ) : (
-                  <>⌕ &nbsp;Run scan</>
+                  <>
+                    Run scan
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ marginLeft: 6 }}>
+                      <circle cx="5.5" cy="5.5" r="3.5" />
+                      <line x1="8.5" y1="8.5" x2="12.5" y2="12.5" />
+                    </svg>
+                  </>
                 )}
               </button>
               {result && !scanning && (
-                <span style={{ fontSize: 13, color: '#34c759' }}>
+                <span style={{ fontSize: 13, color: '#30d158' }}>
                   ✓ Scan complete — {result.scan_date?.slice(0, 10)}
                 </span>
               )}
             </div>
 
-            {scanError && <div className="scan-error">⚠️ {scanError}</div>}
+            {scanError && (
+              <div className="scan-error">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginRight: 6 }}>
+                  <path d="M7 1.5 L12.5 11.5 H1.5 Z" />
+                  <line x1="7" y1="5.5" x2="7" y2="8" />
+                  <circle cx="7" cy="9.8" r="0.5" fill="currentColor" stroke="none" />
+                </svg>
+                {scanError}
+              </div>
+            )}
           </form>
         </div>
 
         {/* ── Results (only after a scan) ── */}
         {result && (
           <>
-            {/* Stat cards */}
-            <p className="section-title">{result.project_name} · Security overview</p>
+            {/* Results header with export */}
+            <div className="results-header">
+              <p className="section-title">{result.project_name} · Security overview</p>
+              <ExportMenu result={result} />
+            </div>
             <div className="stats-grid">
               {SEV_ORDER.map(sev => (
                 <div key={sev} className={`card stat-card ${SEV_META[sev].cssClass}`}>
@@ -507,7 +666,12 @@ export default function App() {
             ) : (
               <div className="card">
                 <div className="empty-state">
-                  <div className="empty-icon">✅</div>
+                  <div className="empty-icon">
+                    <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+                      <circle cx="26" cy="26" r="22" stroke="#4ade80" strokeWidth="2" />
+                      <path d="M16 26 L22 32 L36 18" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                   <p>No findings — clean scan!</p>
                   <span>AI-Scan found no security issues in this project.</span>
                 </div>
@@ -520,7 +684,11 @@ export default function App() {
         {!result && !scanning && (
           <div className="card">
             <div className="empty-state">
-              <div className="empty-icon">🛡️</div>
+              <div className="empty-icon">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                  <path d="M24 4 L40 11 V24 C40 34 24 44 24 44 C24 44 8 34 8 24 V11 Z" stroke="#00d4ff" strokeWidth="1.8" strokeLinejoin="round" />
+                </svg>
+              </div>
               <p>Ready to scan</p>
               <span>Enter a project path above and click Run scan to get started.</span>
             </div>

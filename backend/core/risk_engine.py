@@ -17,6 +17,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import List, Optional, Union
+from urllib.parse import urlparse
 
 from backend.core.models import Finding, ScanResult
 from backend.scanners.config_analyzer import scan_configs
@@ -26,16 +27,20 @@ from backend.scanners.prompt_tester import scan_prompt_injection
 
 
 def _is_git_url(path_or_url: str) -> bool:
-    """Return True if the input looks like a GitHub or GitLab remote URL.
+    """Return True if the input looks like a clonable git remote URL.
+
+    Accepts GitHub/GitLab.com prefixes, git+https://, any HTTPS URL ending
+    in .git, and any HTTPS URL with at least two non-empty path segments
+    (e.g. self-hosted GitLab instances).
 
     Args:
         path_or_url: A string that may be a local path or a remote URL.
 
     Returns:
-        True if the string starts with a recognized git hosting prefix.
+        True if the string is a recognised remote git URL.
     """
     s = path_or_url.strip()
-    return s.startswith((
+    if s.startswith((
         "https://github.com/",
         "http://github.com/",
         "git@github.com:",
@@ -43,7 +48,15 @@ def _is_git_url(path_or_url: str) -> bool:
         "http://gitlab.com/",
         "git@gitlab.com:",
         "git+https://",
-    ))
+    )):
+        return True
+    if s.startswith(("https://", "http://")):
+        if s.endswith(".git"):
+            return True
+        segments = [p for p in urlparse(s).path.split("/") if p]
+        if len(segments) >= 2:
+            return True
+    return False
 
 
 def _clone_repo(url: str) -> Path:

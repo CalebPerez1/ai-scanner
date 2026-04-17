@@ -92,7 +92,7 @@ async def scan(request: ScanRequest) -> dict:
         if not local.exists():
             raise HTTPException(
                 status_code=400,
-                detail=f"project_path '{request.project_path}' does not exist and is not a GitHub URL.",
+                detail=f"project_path '{request.project_path}' does not exist and is not a valid repository URL.",
             )
         if not local.is_dir():
             raise HTTPException(

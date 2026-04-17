@@ -77,10 +77,18 @@ def prompt_findings() -> List[Finding]:
     ("https://gitlab.com/user/repo", True),
     ("http://gitlab.com/user/repo", True),
     ("git@gitlab.com:user/repo.git", True),
+    # Self-hosted GitLab (two+ path segments)
+    ("https://gitlab.cci.drexel.edu/cid/2526/ws1023/62/gb2/b2", True),
+    ("https://gitlab.cci.drexel.edu/org/repo", True),
+    ("https://git.example.com/org/repo.git", True),
+    # HTTPS ending in .git (single segment — accepted via .git suffix rule)
+    ("https://git.example.com/repo.git", True),
     # Local paths and other hosts
     ("/home/user/project", False),
     ("./relative/path", False),
-    ("https://bitbucket.org/user/repo", False),
+    # Bitbucket now accepted (two path segments) — only bare hostname is rejected
+    ("https://git.example.com/singlepath", False),
+    ("https://git.example.com/", False),
     ("", False),
 ])
 def test_is_git_url(url: str, expected: bool) -> None:
