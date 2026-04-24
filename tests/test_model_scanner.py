@@ -146,6 +146,41 @@ class TestScanPythonFiles:
         findings = scan_python_files(str(tmp_path))
         assert len(findings) == 1
 
+    def test_skips_venv_directory(self, tmp_path: Path) -> None:
+        (tmp_path / "venv" / "lib").mkdir(parents=True)
+        (tmp_path / "venv" / "lib" / "site.py").write_text("pickle.load(f)\n", encoding="utf-8")
+        assert scan_python_files(tmp_path) == []
+
+    def test_skips_dot_venv_directory(self, tmp_path: Path) -> None:
+        (tmp_path / ".venv" / "lib").mkdir(parents=True)
+        (tmp_path / ".venv" / "lib" / "site.py").write_text("pickle.load(f)\n", encoding="utf-8")
+        assert scan_python_files(tmp_path) == []
+
+    def test_skips_node_modules_directory(self, tmp_path: Path) -> None:
+        (tmp_path / "node_modules" / "pkg").mkdir(parents=True)
+        (tmp_path / "node_modules" / "pkg" / "script.py").write_text("pickle.load(f)\n", encoding="utf-8")
+        assert scan_python_files(tmp_path) == []
+
+    def test_skips_tests_directory(self, tmp_path: Path) -> None:
+        (tmp_path / "tests").mkdir()
+        (tmp_path / "tests" / "conftest.py").write_text("pickle.load(f)\n", encoding="utf-8")
+        assert scan_python_files(tmp_path) == []
+
+    def test_skips_pycache_directory(self, tmp_path: Path) -> None:
+        (tmp_path / "__pycache__").mkdir()
+        (tmp_path / "__pycache__" / "model.py").write_text("pickle.load(f)\n", encoding="utf-8")
+        assert scan_python_files(tmp_path) == []
+
+    def test_skips_test_prefixed_files(self, tmp_path: Path) -> None:
+        _write_py(tmp_path, "test_model.py", "pickle.load(f)\n")
+        assert scan_python_files(tmp_path) == []
+
+    def test_does_not_skip_non_excluded_dirs(self, tmp_path: Path) -> None:
+        # Confirm normal subdirectories are still scanned.
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "loader.py").write_text("pickle.load(f)\n", encoding="utf-8")
+        assert len(scan_python_files(tmp_path)) == 1
+
 
 # ---------------------------------------------------------------------------
 # check_huggingface_models — HuggingFace Hub auditing

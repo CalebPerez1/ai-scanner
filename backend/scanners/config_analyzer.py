@@ -116,12 +116,13 @@ MISCONFIG_PATTERNS: List[_MisconfigPattern] = [
 # ---------------------------------------------------------------------------
 
 # Directory names to skip when walking the project tree.
-_SKIP_DIRS = frozenset({
+DEFAULT_EXCLUDE_DIRS = frozenset({
     ".git", ".hg", ".svn",
     "venv", ".venv", "env", ".env",
     "node_modules", "__pycache__",
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
     "dist", "build", "site-packages",
+    "tests",
 })
 
 # Extensions treated as binary; reading them as text is not useful.
@@ -148,8 +149,9 @@ def _iter_text_files(project_path: Path) -> Iterable[Path]:
     for entry in project_path.rglob("*"):
         if not entry.is_file():
             continue
-        # Skip if any ancestor directory is in the skip list.
-        if any(part in _SKIP_DIRS for part in entry.parts):
+        if any(part in DEFAULT_EXCLUDE_DIRS for part in entry.parts):
+            continue
+        if entry.name.startswith("test_"):
             continue
         if entry.suffix.lower() in _BINARY_EXTENSIONS:
             continue
@@ -285,7 +287,9 @@ def scan_for_misconfigs(project_path: Path | str) -> List[Finding]:
     findings: List[Finding] = []
 
     for file_path in root.rglob("*.py"):
-        if any(part in _SKIP_DIRS for part in file_path.parts):
+        if any(part in DEFAULT_EXCLUDE_DIRS for part in file_path.parts):
+            continue
+        if file_path.name.startswith("test_"):
             continue
         lines = _read_lines(file_path)
         if lines is None:
@@ -347,7 +351,9 @@ def scan_jupyter_notebooks(project_path: Path | str) -> List[Finding]:
     findings: List[Finding] = []
 
     for nb_path in root.rglob("*.ipynb"):
-        if any(part in _SKIP_DIRS for part in nb_path.parts):
+        if any(part in DEFAULT_EXCLUDE_DIRS for part in nb_path.parts):
+            continue
+        if nb_path.name.startswith("test_"):
             continue
         rel = str(nb_path.relative_to(root))
         try:

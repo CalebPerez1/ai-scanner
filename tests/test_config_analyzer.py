@@ -166,6 +166,21 @@ class TestScanForSecrets:
         findings = scan_for_secrets(tmp_path)
         assert len(findings) == 1
 
+    def test_skips_tests_directory(self, tmp_path: Path) -> None:
+        key = "sk-" + "t" * 48
+        _write(tmp_path, "tests/fixtures.py", f'KEY = "{key}"\n')
+        assert scan_for_secrets(tmp_path) == []
+
+    def test_skips_test_prefixed_files(self, tmp_path: Path) -> None:
+        key = "sk-" + "u" * 48
+        _write(tmp_path, "test_settings.py", f'KEY = "{key}"\n')
+        assert scan_for_secrets(tmp_path) == []
+
+    def test_skips_dot_venv_directory(self, tmp_path: Path) -> None:
+        key = "sk-" + "w" * 48
+        _write(tmp_path, ".venv/lib/site.py", f'KEY = "{key}"\n')
+        assert scan_for_secrets(tmp_path) == []
+
 
 # ---------------------------------------------------------------------------
 # scan_for_misconfigs
@@ -233,6 +248,14 @@ class TestScanForMisconfigs:
     def test_accepts_string_path(self, tmp_path: Path) -> None:
         _write(tmp_path, "s.py", "DEBUG = True\n")
         assert len(scan_for_misconfigs(str(tmp_path))) >= 1
+
+    def test_skips_tests_directory(self, tmp_path: Path) -> None:
+        _write(tmp_path, "tests/test_app.py", "DEBUG = True\n")
+        assert scan_for_misconfigs(tmp_path) == []
+
+    def test_skips_test_prefixed_files(self, tmp_path: Path) -> None:
+        _write(tmp_path, "test_settings.py", "DEBUG = True\n")
+        assert scan_for_misconfigs(tmp_path) == []
 
 
 # ---------------------------------------------------------------------------

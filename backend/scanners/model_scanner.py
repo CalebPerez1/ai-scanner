@@ -18,6 +18,10 @@ from backend.core.models import Finding, Severity
 
 SCANNER_NAME = "model_scanner"
 
+DEFAULT_EXCLUDE_DIRS = frozenset({
+    "venv", ".venv", "node_modules", ".git", "__pycache__", "tests",
+})
+
 # ---------------------------------------------------------------------------
 # Unsafe deserialization patterns
 # ---------------------------------------------------------------------------
@@ -83,8 +87,13 @@ _LOW_DOWNLOAD_THRESHOLD = 100
 # ---------------------------------------------------------------------------
 
 def _iter_python_files(project_path: Path) -> Iterable[Path]:
-    """Yield all .py files under *project_path* recursively."""
-    yield from project_path.rglob("*.py")
+    """Yield .py files under *project_path*, skipping excluded dirs and test files."""
+    for py_file in project_path.rglob("*.py"):
+        if any(part in DEFAULT_EXCLUDE_DIRS for part in py_file.parts):
+            continue
+        if py_file.name.startswith("test_"):
+            continue
+        yield py_file
 
 
 def _check_file_for_unsafe_loads(file_path: Path, project_root: Path) -> List[Finding]:
