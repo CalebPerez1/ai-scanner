@@ -14,6 +14,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from backend.core.models import ScanResult
@@ -114,3 +115,12 @@ async def scan(request: ScanRequest) -> dict:
 
     # Serialize via Pydantic so enum values become strings and datetime is ISO 8601.
     return result.model_dump(mode="json")
+
+
+# ---------------------------------------------------------------------------
+# Static frontend — mounted last so /api/* routes take priority
+# ---------------------------------------------------------------------------
+
+_FRONTEND_BUILD = Path(__file__).parent.parent / "frontend" / "build"
+if _FRONTEND_BUILD.exists():
+    app.mount("/", StaticFiles(directory=str(_FRONTEND_BUILD), html=True), name="frontend")
