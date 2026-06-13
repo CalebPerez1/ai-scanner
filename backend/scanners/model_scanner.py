@@ -19,7 +19,7 @@ from backend.core.models import Finding, Severity
 SCANNER_NAME = "model_scanner"
 
 DEFAULT_EXCLUDE_DIRS = frozenset({
-    "venv", ".venv", "node_modules", ".git", "__pycache__", "tests",
+    "venv", ".venv", "node_modules", ".git", "__pycache__", "tests", "backend",
 })
 
 # ---------------------------------------------------------------------------

@@ -32,5 +32,5 @@ frontend/build/
 
 # Reports output
 reports/*.pdf
-reports/*.json
 .claude
+report.json

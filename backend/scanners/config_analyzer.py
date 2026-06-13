@@ -122,7 +122,7 @@ DEFAULT_EXCLUDE_DIRS = frozenset({
     "node_modules", "__pycache__",
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
     "dist", "build", "site-packages",
-    "tests",
+    "tests", "backend",
 })
 
 # Extensions treated as binary; reading them as text is not useful.
