@@ -1,8 +1,6 @@
-# AI-Scan
+# AI-Scan ( AI Supply Chain Security Scanner )
 
-Security scanner for AI/ML projects. Point it at a repo or local project and it checks for dependency vulnerabilities, unsafe model loading, prompt injection weaknesses, leaked credentials, and misconfigurations.
-
-![Dashboard](docs/dashboard.png)
+A Security Scanner which scans AI/ML project pipelines for supply chain vulnerabilities i.e., dependency CVEs, typosquatting, unsafe model loading, prompt injection, leaked credentials, and misconfigurations. Point it at a GitHub repo or local project and it runs four scanners at once.
 
 **Live demo:** [ai-scanner-z9yr.onrender.com](https://ai-scanner-z9yr.onrender.com)
 
