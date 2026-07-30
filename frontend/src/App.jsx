@@ -631,7 +631,6 @@ export default function App() {
             <div className="stats-grid">
               {SEV_ORDER.map(sev => (
                 <div key={sev} className={`card stat-card ${SEV_META[sev].cssClass}`}>
-                  <div className="stat-accent" />
                   <div className="stat-body">
                     <div className="stat-label">{SEV_META[sev].label}</div>
                     <div className="stat-value">{countBySev(sev)}</div>
