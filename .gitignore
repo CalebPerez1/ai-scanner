@@ -34,3 +34,4 @@ frontend/build/
 reports/*.pdf
 .claude
 report.json
+test_llm_server.py
